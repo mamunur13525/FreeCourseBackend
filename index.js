@@ -5,7 +5,7 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const uuid = require("uuid");
 require("dotenv").config();
- 
+
 const { ObjectId } = require("mongodb");
 require("dotenv").config();
 const { MongoClient } = require("mongodb");
@@ -109,7 +109,7 @@ client.connect((err) => {
   // Get Specific COures
   app.get("/one_course/:id", (req, res) => {
     let courseId = req.params.id;
-    console.log(courseId);
+
     courseCollection
       .find({ _id: ObjectId(courseId) })
       .toArray((err, documents) => {
@@ -120,16 +120,17 @@ client.connect((err) => {
   //Course Create
   app.post("/add-course", (req, res) => {
     const register = req.body;
-    courseCollection
-      .insertOne(register)
-      .then((result) => {
-        if (result.insertedCount > 0) {
+
+    try {
+      courseCollection.insertOne(register).then((result) => {
+        console.log({ result });
+        if (result.acknowledged) {
           res.send({ status: true });
         }
-      })
-      .catch((err) => {
-        res.send({ status: false, message: err });
       });
+    } catch (e) {
+      res.send({ status: false, message: err });
+    }
   });
 
   //Course Upadte FOr COmments
@@ -138,8 +139,6 @@ client.connect((err) => {
     const indexComment = req.body.index;
     const statusFromBody = req.body.status;
     const targetComment = `comments.${indexComment}.approve`;
-
-    console.log({ body: req.body });
 
     courseCollection.updateOne(
       { _id: ObjectId(courseId) },
