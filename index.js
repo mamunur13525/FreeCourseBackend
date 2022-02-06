@@ -12,18 +12,17 @@ const { MongoClient } = require("mongodb");
 
 const uri = `mongodb+srv://${process.env.DB_HOST}:${process.env.DB_PASS}@cluster0.k2oj4.mongodb.net/${process.env.DB_USER}?retryWrites=true&w=majority`;
 
-console.log({ uri });
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
-
+ 
 const ImageKit = require("imagekit");
 const imagekit = new ImageKit({
   urlEndpoint: "https://ik.imagekit.io/b1lhvbzf99x",
   publicKey: "public_JQOkLhqzy//NdqgGFHaosM8IWeA=",
   privateKey: "private_GmmXgMu2M7RM9Km2zNOOWVXVPY4=",
-});
+}); 
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -63,15 +62,15 @@ client.connect((err) => {
     });
   });
   //Create Admin
-  app.post("/add-category", (req, res) => {
+  app.post("/add-admin-email", (req, res) => {
     const register = req.body;
-    categoryCollectino
-      .find({ category: register.category })
+    adminCollection
+      .find({ email: register.email })
       .toArray((err, documents) => {
         if (documents.length) {
           res.send(false);
         } else {
-          categoryCollectino.insertOne(register).then((result) => {
+          adminCollection.insertOne(register).then((result) => {
             if (result.insertedCount > 0) {
               res.send(true);
             } else {
@@ -81,7 +80,14 @@ client.connect((err) => {
         }
       });
   });
-  //Create Admin
+  // Get All Admin List
+  app.get("/all-admin", (req, res) => {
+    adminCollection.find({}).toArray((err, documents) => {
+      res.send(documents);
+    });
+  });
+
+  //Delete Category
   app.delete("/delete-category/:id", (req, res) => {
     const id = req.params.id;
     console.log(id);
@@ -93,23 +99,35 @@ client.connect((err) => {
       }
     });
   });
-  //Create Admin
+  //All Category
   app.get("/all-category", (req, res) => {
     categoryCollectino.find({}).toArray((err, documents) => {
       res.send(documents);
     });
   });
 
-  // All Admin
+  // Get All Admin
   app.get("/admin_", (req, res) => {
     adminCollection.find({}).toArray((err, documents) => {
       res.send(documents);
     });
   });
+
+  //DeLETE Admin Delete
+  app.delete("/delete_admin/:email", (req, res) => {
+    const email = req.params.email;
+    adminCollection.deleteOne({ email: email }, function (err, result) {
+      if (result.deletedCount > 0) {
+        res.send({ status: true, message: "Successfully Delete One" });
+      } else {
+        res.send({ status: false, message: err });
+      }
+    });
+  });
   // Get Specific COures
   app.get("/one_course/:id", (req, res) => {
     let courseId = req.params.id;
-
+    console.log(courseId);
     courseCollection
       .find({ _id: ObjectId(courseId) })
       .toArray((err, documents) => {
@@ -120,17 +138,16 @@ client.connect((err) => {
   //Course Create
   app.post("/add-course", (req, res) => {
     const register = req.body;
-
-    try {
-      courseCollection.insertOne(register).then((result) => {
-        console.log({ result });
-        if (result.acknowledged) {
+    courseCollection
+      .insertOne(register)
+      .then((result) => {
+        if (result.insertedCount > 0) {
           res.send({ status: true });
         }
+      })
+      .catch((err) => {
+        res.send({ status: false, message: err });
       });
-    } catch (e) {
-      res.send({ status: false, message: err });
-    }
   });
 
   //Course Upadte FOr COmments
@@ -139,6 +156,8 @@ client.connect((err) => {
     const indexComment = req.body.index;
     const statusFromBody = req.body.status;
     const targetComment = `comments.${indexComment}.approve`;
+
+    console.log({ body: req.body });
 
     courseCollection.updateOne(
       { _id: ObjectId(courseId) },
@@ -191,6 +210,29 @@ client.connect((err) => {
     });
   });
 });
+
+//Create Admin
+app.post("/add-category", (req, res) => {
+  const register = req.body;
+  categoryCollectino
+    .find({ category: register.category })
+    .toArray((err, documents) => {
+      if (documents.length) {
+        res.send(false);
+      } else {
+        categoryCollectino.insertOne(register).then((result) => {
+          if (result.insertedCount > 0) {
+            res.send(true);
+          } else {
+            res.send(false);
+          }
+        });
+      }
+    });
+});
+
+
+
 app.get("/", (req, res) => {
   res.send(
     "Hello world It's working. This URL is working Fine. don't hajitaed nothing."
