@@ -16,22 +16,21 @@ const client = new MongoClient(uri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
- 
+
 const ImageKit = require("imagekit");
 const imagekit = new ImageKit({
   urlEndpoint: "https://ik.imagekit.io/b1lhvbzf99x",
   publicKey: "public_JQOkLhqzy//NdqgGFHaosM8IWeA=",
   privateKey: "private_GmmXgMu2M7RM9Km2zNOOWVXVPY4=",
-}); 
+});
 
 app.use(cors());
 app.use(bodyParser.json());
 
 client.connect((err) => {
-  console.log("mongodb connected");
   const adminCollection = client.db("Free_course_data").collection("admin");
   const courseCollection = client.db("Free_course_data").collection("courses");
-  const categoryCollectino = client
+  const categoryCollection = client
     .db("Free_course_data")
     .collection("category");
   //Admin add
@@ -54,31 +53,25 @@ client.connect((err) => {
       }
     });
   });
-  //Create Admin
-  app.post("/add-admin", (req, res) => {
-    const register = req.body;
-    adminCollection.insertOne(register).then((result) => {
-      res.send(result);
-    });
-  });
+
   //Create Admin
   app.post("/add-admin-email", (req, res) => {
     const register = req.body;
-    adminCollection
-      .find({ email: register.email })
-      .toArray((err, documents) => {
-        if (documents.length) {
-          res.send(false);
-        } else {
-          adminCollection.insertOne(register).then((result) => {
-            if (result.insertedCount > 0) {
-              res.send(true);
-            } else {
-              res.send(false);
-            }
-          });
-        }
-      });
+    adminCollection.find({ email: register.email }).toArray((err, documents) => {
+
+      if (documents.length) {
+        res.send(false);
+      } else {
+        adminCollection.insertOne(register).then((result) => {
+
+          if (result.acknowledged) {
+            res.send(true);
+          } else {
+            res.send(false);
+          }
+        });
+      }
+    });
   });
   // Get All Admin List
   app.get("/all-admin", (req, res) => {
@@ -87,11 +80,29 @@ client.connect((err) => {
     });
   });
 
+  // Add Category
+  app.post("/add-category", (req, res) => {
+    const register = req.body;
+    categoryCollection.find({ category: register.category }).toArray((err, documents) => {
+      if (documents.length) {
+        res.send(false);
+      } else {
+        categoryCollection.insertOne(register).then((result) => {
+      
+          if (result.acknowledged) {
+            res.send(true);
+          } else {
+            res.send(false);
+          }
+        });
+      }
+    });
+  });
   //Delete Category
   app.delete("/delete-category/:id", (req, res) => {
     const id = req.params.id;
-    console.log(id);
-    categoryCollectino.deleteOne({ _id: ObjectId(id) }, function (err, result) {
+  
+    categoryCollection.deleteOne({ _id: ObjectId(id) }, function (err, result) {
       if (result.deletedCount > 0) {
         res.send({ status: true, message: "Successfully Delete One" });
       } else {
@@ -101,7 +112,7 @@ client.connect((err) => {
   });
   //All Category
   app.get("/all-category", (req, res) => {
-    categoryCollectino.find({}).toArray((err, documents) => {
+    categoryCollection.find({}).toArray((err, documents) => {
       res.send(documents);
     });
   });
@@ -127,7 +138,7 @@ client.connect((err) => {
   // Get Specific COures
   app.get("/one_course/:id", (req, res) => {
     let courseId = req.params.id;
-    console.log(courseId);
+ 
     courseCollection
       .find({ _id: ObjectId(courseId) })
       .toArray((err, documents) => {
@@ -157,7 +168,6 @@ client.connect((err) => {
     const statusFromBody = req.body.status;
     const targetComment = `comments.${indexComment}.approve`;
 
-    console.log({ body: req.body });
 
     courseCollection.updateOne(
       { _id: ObjectId(courseId) },
@@ -212,24 +222,7 @@ client.connect((err) => {
 });
 
 //Create Admin
-app.post("/add-category", (req, res) => {
-  const register = req.body;
-  categoryCollectino
-    .find({ category: register.category })
-    .toArray((err, documents) => {
-      if (documents.length) {
-        res.send(false);
-      } else {
-        categoryCollectino.insertOne(register).then((result) => {
-          if (result.insertedCount > 0) {
-            res.send(true);
-          } else {
-            res.send(false);
-          }
-        });
-      }
-    });
-});
+
 
 
 
