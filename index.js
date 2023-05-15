@@ -10,7 +10,7 @@ const { ObjectId } = require("mongodb");
 require("dotenv").config();
 const { MongoClient } = require("mongodb");
 
-const uri = `mongodb+srv://${process.env.DB_HOST}:${process.env.DB_PASS}@cluster0.k2oj4.mongodb.net/${process.env.DB_USER}?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.DB_HOST}:${process.env.DB_PASS}@cluster0.k2oj4.mongodb.net?retryWrites=true&w=majority`;
 
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
@@ -88,7 +88,7 @@ client.connect((err) => {
         res.send(false);
       } else {
         categoryCollection.insertOne(register).then((result) => {
-      
+
           if (result.acknowledged) {
             res.send(true);
           } else {
@@ -101,7 +101,7 @@ client.connect((err) => {
   //Delete Category
   app.delete("/delete-category/:id", (req, res) => {
     const id = req.params.id;
-  
+
     categoryCollection.deleteOne({ _id: ObjectId(id) }, function (err, result) {
       if (result.deletedCount > 0) {
         res.send({ status: true, message: "Successfully Delete One" });
@@ -138,7 +138,7 @@ client.connect((err) => {
   // Get Specific COures
   app.get("/one_course/:id", (req, res) => {
     let courseId = req.params.id;
- 
+
     courseCollection
       .find({ _id: ObjectId(courseId) })
       .toArray((err, documents) => {
@@ -150,34 +150,34 @@ client.connect((err) => {
   app.post("/add-course", (req, res) => {
     const register = req.body;
     courseCollection
-      .insertOne(register)
-      .then((result) => {
-        if (result.insertedCount > 0) {
-          res.send({ status: true });
-        }
-      })
-      .catch((err) => {
-        res.send({ status: false, message: err });
-      });
+      .insertOne(register,
+        (err) => {
+          if (err) {
+            res.status(500).json({ success: false, message: 'Course upload failed!' });
+          } else {
+            res.status(200).json({ success: true, message: 'Course upload successfully' });
+          }
+        });
   });
 
+
+
   //Course Upadte FOr COmments
-  app.patch("/comment-approve/:id", (req, res) => {
+  app.patch("/course_update/:id", (req, res) => {
     const courseId = req.params.id;
-    const indexComment = req.body.index;
-    const statusFromBody = req.body.status;
-    const targetComment = `comments.${indexComment}.approve`;
-
-
+    const courseBody = req.body
+    console.log({
+      courseId,
+      courseBody
+    })
     courseCollection.updateOne(
       { _id: ObjectId(courseId) },
-      { $set: { [targetComment]: statusFromBody } },
-      function (err, documents) {
-        if (err === null) {
-          res.send({ status: "success", message: "Comment Show in UI." });
-        } else {
-          res.send({ status: "failed", message: "Comment Approve Failed." });
+      { $set: { ...courseBody } },
+      function (err) {
+        if (err) {
+          return res.send({ success: false, message: "Update Failed!" });
         }
+        return res.send({ success: true, message: "Course updated." });
       }
     );
   });
@@ -202,6 +202,7 @@ client.connect((err) => {
         res.send({ status: false, message: err });
       });
   });
+
   //DeLETE COURSE BY Admin
   app.delete("/delete_course/:id", (req, res) => {
     const id = req.params.id;
@@ -217,6 +218,15 @@ client.connect((err) => {
   app.get("/all-course", (req, res) => {
     courseCollection.find({}).toArray((err, documents) => {
       res.send({ result: documents });
+    });
+  });
+
+  //Get Single Course BY Id
+  app.get("/course/:id", (req, res) => {
+    const id = req.params.id;
+    courseCollection.findOne({ _id: ObjectId(id) }, (err, result) => {
+      if (err) throw err;
+      res.send({ status: 'success', data: result });
     });
   });
 });
